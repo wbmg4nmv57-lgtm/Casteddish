@@ -118,6 +118,31 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
   padding: 2px 16px; border-radius: 20px; background: rgba(0,0,0,.55); border: 2px solid rgba(255,255,255,.35); text-shadow: 0 1px 3px #000; }
 #timerHud.low { color: #ff5a4a; border-color: #ff3b30; animation: timerBlink .7s steps(2) infinite; }
 @keyframes timerBlink { 50% { background: rgba(120,0,0,.75); } }
+/* Pause menu and interface editor */
+#pauseMenu { position: absolute; inset: 0; z-index: 95; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; background: rgba(5,3,8,.84); transition: opacity .25s, visibility .25s; user-select: none; -webkit-user-select: none; }
+#pauseMenu.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+#pauseMenu h2 { margin: 0 0 14px; font: bold clamp(30px, 12vh, 56px) Impact, 'Arial Black', sans-serif; letter-spacing: .12em; color: #ffd23a; text-shadow: 0 0 20px rgba(255,160,40,.7); }
+#pauseMenu .endBtns { flex-wrap: wrap; justify-content: center; }
+#btnSettings { cursor: pointer; margin-top: 12px; padding: .5em 1.4em; border-radius: 30px; border: 2px solid #8a4a2a; background: rgba(30,12,10,.7); color: #ffd9a8;
+  font: bold clamp(11px, 3vh, 15px) 'Trebuchet MS', sans-serif; letter-spacing: .12em; touch-action: manipulation; }
+#btnGear:active { transform: scale(.92); }
+#editor { position: absolute; inset: 0; z-index: 120; background: rgba(0,0,0,.35); touch-action: none; user-select: none; -webkit-user-select: none; font-family: 'Trebuchet MS', sans-serif; color: #fff; }
+#editor.hide { display: none; }
+#edHint { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); padding: 4px 14px; border-radius: 16px; background: rgba(0,0,0,.75); border: 1px solid rgba(255,255,255,.3); font-size: 11px; white-space: nowrap; pointer-events: none; }
+.edh { position: absolute; box-sizing: border-box; border: 2px dashed rgba(255,255,255,.85); background: rgba(255,170,40,.14); border-radius: 8px; touch-action: none; cursor: move; overflow: hidden; }
+.edh b { position: absolute; left: 3px; top: 1px; max-width: calc(100% - 6px); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px #000; pointer-events: none; }
+.edh.sel { border: 2px solid #67e8f9; background: rgba(103,232,249,.2); box-shadow: 0 0 12px rgba(103,232,249,.7); }
+#edPanel { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); width: 300px; padding: 8px 10px; border-radius: 14px; background: rgba(10,8,16,.92); border: 2px solid #ffb13a; box-shadow: 0 0 20px rgba(255,120,30,.4); }
+#edGrip { cursor: grab; touch-action: none; font: bold 13px 'Trebuchet MS', sans-serif; color: #ffd23a; padding-bottom: 6px; }
+.edRow { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+.edRow input { flex: 1; }
+#edVal { width: 40px; text-align: right; font: bold 12px 'Courier New', monospace; }
+.edBtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.edBtns button { cursor: pointer; padding: 7px 4px; border-radius: 10px; border: 1px solid #5a5a70; background: #23232f; color: #fff; font: bold 11px 'Trebuchet MS', sans-serif; letter-spacing: .04em; touch-action: manipulation; }
+.edBtns button:disabled { opacity: .4; }
+.edBtns button#edSave { background: linear-gradient(180deg, #ff9a2e, #d3200c); border-color: #ffb13a; }
+#edMsg { font-size: 11px; color: #ffb4a0; min-height: 14px; margin-top: 4px; text-align: center; }
 .kbh { display: none; margin-top: 12px; font-size: clamp(10px, 2.8vh, 13px); color: #c9a58a; letter-spacing: .04em; }
 #kbHelp { display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60; pointer-events: none; padding: 12px 18px; border-radius: 14px;
   background: rgba(8,6,12,.88); border: 2px solid #ffb13a; box-shadow: 0 0 22px rgba(255,120,30,.45); font: 13px 'Trebuchet MS', sans-serif; color: #fff; }
@@ -136,12 +161,24 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
 <div id="stage" style="position:relative;width:100vw;height:100vh;height:100dvh;overflow:hidden;background:#000;">
   <canvas id="gameCanvas" class="image-render-pixelated" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;"></canvas>
   <div id="damageOverlay" style="position:absolute;inset:0;pointer-events:none;background:rgba(220,38,38,0);transition:background-color .1s;"></div>
-  <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:none;font-size:11px;font-weight:bold;white-space:nowrap;text-shadow:0 1px 2px #000;z-index:20;">
+  <div id="hudInfo" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:none;font-size:11px;font-weight:bold;white-space:nowrap;text-shadow:0 1px 2px #000;z-index:20;">
     <span style="color:#ef4444">CASTEDDISH</span> <span id="fpsDisplay" style="color:#9ca3af">FPS: 60</span> &nbsp;
     <span style="color:#facc15">HP: <span id="hpDisplay" style="color:#fff">100</span>%</span> &nbsp;
     <span style="color:#f87171">KILLS: <span id="killsDisplay" style="color:#fff">0</span></span>
   </div>
   <div id="timerHud">0:00</div>
+  <button id="btnGear" type="button" aria-label="Pausa" style="position:absolute;left:max(8px,env(safe-area-inset-left));top:108px;width:34px;height:34px;padding:0;border-radius:50%;border:2px solid rgba(255,255,255,.45);background:rgba(0,0,0,.5);color:#fff;font-size:18px;line-height:1;z-index:20;touch-action:none;">⚙</button>
+  <div id="pauseMenu" class="hide"><h2>PAUSA</h2><div class="endBtns"><button id="pRes">RIPRENDI</button><button id="pSet">IMPOSTAZIONI</button><button id="btnPMenu">MENU PRINCIPALE</button></div></div>
+  <div id="editor" class="hide">
+    <div id="edHint">Trascina gli elementi per spostarli · tocca un elemento per cambiarne la grandezza</div>
+    <div id="edHandles"></div>
+    <div id="edPanel">
+      <div id="edGrip">⠿ <span id="edName">Tocca un elemento per modificarlo</span></div>
+      <div class="edRow"><span>Grandezza</span><input type="range" id="edSize" min="50" max="220" step="5" value="100"><span id="edVal"></span></div>
+      <div class="edBtns"><button id="edReset1">RIPRISTINA ELEMENTO</button><button id="edResetAll">RIPRISTINA TUTTO</button><button id="edCancel">ANNULLA</button><button id="edSave">SALVA E ESCI</button></div>
+      <div id="edMsg"></div>
+    </div>
+  </div>
   <div id="kbHelp"><h3>COMANDI TASTIERA E MOUSE</h3><div>
     <span><kbd>W</kbd><kbd>S</kbd> / <kbd>↑</kbd><kbd>↓</kbd></span><span>avanti / indietro</span>
     <span><kbd>A</kbd><kbd>D</kbd></span><span>passo laterale</span>
@@ -157,7 +194,7 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
     <span><kbd>CLIC SX</kbd></span><span>spara</span>
     <span><kbd>CLIC DX</kbd></span><span>magia di fuoco</span>
     <span><kbd>ROTELLA</kbd></span><span>cambia arma</span>
-    <span><kbd>ESC</kbd></span><span>chiudi mappa e menù, libera il mouse</span></div></div>
+    <span><kbd>ESC</kbd></span><span>pausa (o chiude mappa e menù)</span></div></div>
   <div id="menu">
     <div class="embers"><i style="--x:8%;--d:0s;--dx:20px"></i><i style="--x:19%;--d:1.4s;--dx:-30px"></i><i style="--x:31%;--d:3.1s;--dx:25px"></i><i style="--x:43%;--d:.7s;--dx:-15px"></i><i style="--x:55%;--d:2.4s;--dx:35px"></i><i style="--x:66%;--d:4.2s;--dx:-25px"></i><i style="--x:77%;--d:1.9s;--dx:15px"></i><i style="--x:88%;--d:3.6s;--dx:-35px"></i><i style="--x:25%;--d:5s;--dx:10px"></i><i style="--x:72%;--d:.3s;--dx:-10px"></i></div>
     <h1 id="title"><span style="--i:0">C</span><span style="--i:1">A</span><span style="--i:2">S</span><span style="--i:3">T</span><span style="--i:4">E</span><span style="--i:5">D</span><span style="--i:6">D</span><span style="--i:7">I</span><span style="--i:8">S</span><span style="--i:9">H</span></h1>
@@ -166,6 +203,7 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
     <div class="desc" id="diffDesc"></div>
     <div id="timedRow"><div class="sw"></div><span>MODALITÀ A TEMPO <small>(solo Difficile)</small></span></div>
     <button id="btnStart">INIZIA</button>
+    <button id="btnSettings">⚙ IMPOSTAZIONI</button>
     <div class="kbh" id="kbHint">⌨ &nbsp;←/→ scegli la difficoltà &nbsp;·&nbsp; T modalità a tempo &nbsp;·&nbsp; INVIO inizia</div>
   </div>
   <div id="endScreen" class="hide">
@@ -2537,11 +2575,12 @@ function makePad(baseId, knobId, st, DEADZONE, xOnly) {
 function makeTouchZones() {
   const layer = document.getElementById('touchLayer'), stage = document.getElementById('stage'), base = document.getElementById('joyBase'), knob = document.getElementById('joyKnob');
   let jid = null, lid = null, jx = 0, jy = 0, lx = 0;
-  const travel = 40, dead = 0.12;
+  const TR = () => 40 * ((LAYOUT.joy && LAYOUT.joy.s) || 1), dead = 0.12;
   const moveJoy = (e) => {
+    const travel = TR();
     let nx = (e.clientX - jx) / travel, ny = (e.clientY - jy) / travel, mag = Math.hypot(nx, ny);
     if (mag > 1) { nx /= mag; ny /= mag; mag = 1; }
-    knob.style.transform = `translate(${nx * travel}px, ${ny * travel}px)`;
+    knob.style.transform = `translate(${nx * 40}px, ${ny * 40}px)`;
     if (mag < dead) { joy.x = joy.y = 0; return; }
     const k = ((mag - dead) / (1 - dead)) / mag; joy.x = nx * k; joy.y = ny * k;
   };
@@ -2651,6 +2690,8 @@ function setupInput() {
     if (!kb.on) { if (!e.isTrusted) return; enableKb(); }
     const k = e.key.toLowerCase();
     initAudio();
+    if (ed.on) { if (k === 'escape') closeEditor(false); return; }
+    if (paused) { if (k === 'escape' || k === 'p') { setPaused(false); e.preventDefault(); } return; }
     if (!gameStarted) { menuKey(e, k); return; }
     if (endShown && !document.getElementById('endScreen').classList.contains('hide')) { endKey(e, k); return; }
     let used = true;
@@ -2668,7 +2709,10 @@ function setupInput() {
       case 'g': castMagic(); break;
       case 'm': toggleMinimap(); break;
       case 'h': case '?': toggleKbHelp(); break;
-      case 'escape': toggleMinimap(false); toggleWeaponMenu(false); toggleKbHelp(false); break;
+      case 'escape':
+        if (mm.goal || wmOpen || document.getElementById('kbHelp').style.display === 'block') { toggleMinimap(false); toggleWeaponMenu(false); toggleKbHelp(false); } else setPaused(true);
+        break;
+      case 'p': setPaused(true); break;
       default: used = false;
     }
     if (used) e.preventDefault();
@@ -3687,6 +3731,8 @@ function renderGun() {
   const oy = isFiring ? (fireAnimFrame % 2 === 1 ? 7 : -3) : 0;
   const mv = Math.min(1, Math.hypot(joy.x, joy.y) + (input.fwd || input.back ? 1 : 0));
   const sz = 104, gx = cx - 52 + Math.sin(tNow * 9) * 4 * mv, gy = H - sz + 10 + oy + Math.abs(Math.cos(tNow * 9)) * 3 * mv;
+  CVBOX.gun = { cx: gx + sz / 2, cy: gy + sz / 2, w: sz, h: sz };
+  const lyG = layoutBegin('gun', gx + sz / 2, gy + sz / 2);
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(gunArt[cur], gx, gy, sz, sz);
   ctx.imageSmoothingEnabled = false;
@@ -3697,23 +3743,36 @@ function renderGun() {
     ctx.fillStyle = cur === 7 ? '#d8ffe0' : '#fff'; ctx.beginPath(); ctx.arc(fx, fy, 7, 0, Math.PI * 2); ctx.fill();
   }
 
+  layoutEnd(lyG);
   ctx.font = 'bold 12px monospace';
   const txt = (t, x, y, col, al) => {
     ctx.textAlign = al || 'left';
     ctx.fillStyle = '#000'; ctx.fillText(t, x + 1, y + 1);
     ctx.fillStyle = col; ctx.fillText(t, x, y);
   };
+  const lyI = layoutBegin('info', 100, 34.5);
   txt('PIANO ' + (curFloor + 1) + '/5', 8, 16, '#dddddd');
   const ready = remaining === 0 && keys >= keysNeed;
   txt(curFloor === 4 ? 'UCCIDI IL BOSS' : ready ? 'VAI ALLE SCALE!' : 'NEMICI: ' + remaining + '  CHIAVI: ' + keys + '/' + keysNeed, 8, 30, curFloor === 4 || !ready ? '#ffff77' : '#77ff77');
   txt(WEAPONS[cur].name + ' ' + (ammo[cur] === Infinity ? '\u221e' : ammo[cur]), 8, 44, '#ffd24a');
   txt(armor.t >= 0 ? 'ARMATURA ' + ARMORS[armor.t].name + ' ' + Math.ceil(armor.ap) : 'SENZA ARMATURA', 8, 58, armor.t >= 0 ? ARMORS[armor.t].col : '#999999');
+  layoutEnd(lyI);
+  const lyC = layoutBegin('cross', cx, H / 2);
   ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 1; ctx.beginPath();
   ctx.moveTo(cx - 6, H / 2); ctx.lineTo(cx - 2, H / 2); ctx.moveTo(cx + 2, H / 2); ctx.lineTo(cx + 6, H / 2);
   ctx.moveTo(cx, H / 2 - 6); ctx.lineTo(cx, H / 2 - 2); ctx.moveTo(cx, H / 2 + 2); ctx.lineTo(cx, H / 2 + 6); ctx.stroke();
+  layoutEnd(lyC);
   const boss = enemies.find(e => e.type === 'boss' && e.alive);
-  if (boss) { ctx.fillStyle = '#300'; ctx.fillRect(cx - 110, 38, 220, 6); ctx.fillStyle = '#d22'; ctx.fillRect(cx - 110, 38, 220 * Math.max(0, boss.hp) / boss.mhp, 6); }
-  if (toastT > 0) txt(toast, cx, H * 0.3, '#ffffff', 'center');
+  if (boss || ed.on) {
+    const lyB = layoutBegin('boss', cx, 41), frac = boss ? Math.max(0, boss.hp) / boss.mhp : 1;
+    ctx.fillStyle = '#300'; ctx.fillRect(cx - 110, 38, 220, 6); ctx.fillStyle = '#d22'; ctx.fillRect(cx - 110, 38, 220 * frac, 6);
+    layoutEnd(lyB);
+  }
+  if (toastT > 0 || ed.on) {
+    const lyT = layoutBegin('toast', cx, H * 0.3 - 4);
+    txt(toastT > 0 ? toast : 'MESSAGGIO', cx, H * 0.3, '#ffffff', 'center');
+    layoutEnd(lyT);
+  }
   if (player.hp <= 0 || won) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -3733,8 +3792,9 @@ function stepMinimap(dt) {
   if (mm.goal ? mm.t >= 1 : mm.t <= 0) mm.t = mm.goal;
   const t = mm.t, e = mm.e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const st = document.getElementById('stage'), W = st.clientWidth, H = st.clientHeight, S = Math.min(W, H) - 16, s0 = mm.small, b = mm.box.style;
-  if (t === 0) { b.top = b.right = b.width = b.height = b.borderRadius = b.background = b.zIndex = ''; mm.css = s0.size - 8; }
+  if (t === 0) { b.top = b.right = b.width = b.height = b.borderRadius = b.background = b.zIndex = ''; mm.css = s0.size - 8; applyLayout(); }
   else {
+    b.translate = ''; b.scale = '';   // the custom position is already part of the rectangle the animation starts from
     const size = s0.size + (S - s0.size) * e;
     b.top = (s0.top + ((H - S) / 2 - s0.top) * e) + 'px'; b.right = (s0.right + ((W - S) / 2 - s0.right) * e) + 'px';
     b.width = b.height = size + 'px'; b.borderRadius = (8 + 8 * e) + 'px'; b.background = 'rgba(0,0,0,' + (0.7 + 0.16 * e) + ')'; b.zIndex = '40';
@@ -3820,8 +3880,9 @@ function gameLoop(now) {
     document.getElementById('fpsDisplay').innerText = `FPS: ${frameCount}`;
     frameCount = 0; fpsTimer = 0;
   }
-  if (gameStarted) { stepMinimap(dt); update(dt); if (!endShown && (player.hp <= 0 || won)) showEnd(); }
+  if (gameStarted) { stepMinimap(dt); if (!paused) { update(dt); if (!endShown && (player.hp <= 0 || won)) showEnd(); } }
   render();
+  if (ed.on) placeHandles();
   requestAnimationFrame(gameLoop);
 }
 
@@ -3903,6 +3964,160 @@ function setupMenu(prefs) {
   paint();
 }
 
+/* ---------- Pause and interface layout (settings) ---------- */
+let paused = false;
+const LAYOUT_KEY = 'casteddish_layout';
+let LAYOUT = {};   // id -> { dx, dy, s }: offset in screen pixels from the default position, and size multiplier
+const DOMEL = { fire: ['btnFire', 'throwSlider'], weapon: ['btnWeapon'], use: ['btnUse'], magic: ['btnMagic'], map: ['miniBox'], timer: ['timerHud'], top: ['hudInfo'], gear: ['btnGear'] };
+const CVBOX = { info: { cx: 100, cy: 34.5, w: 192, h: 60 }, cross: { cx: 256, cy: 128, w: 20, h: 20 }, boss: { cx: 256, cy: 41, w: 224, h: 12 }, toast: { cx: 256, cy: 72.8, w: 270, h: 18 }, gun: { cx: 256, cy: 205, w: 104, h: 104 } };
+const ELEMS = [['gun', 'Arma in mano'], ['info', 'Info di gioco'], ['top', 'Barra in alto'], ['toast', 'Messaggi'], ['boss', 'Vita del boss'], ['cross', 'Mirino'], ['map', 'Minimappa'], ['timer', 'Timer'],
+  ['gear', 'Pausa'], ['joy', 'Joystick (solo grandezza)'], ['magic', 'Magia di fuoco'], ['use', 'Pulsante APRI'], ['weapon', 'Pulsante ARMA'], ['fire', 'Pulsante fuoco e barra di lancio']];
+const ed = { on: false, sel: null, backup: '', from: 'menu', saved: null, handles: {} };
+
+const viewK = () => { const st = document.getElementById('stage'); return Math.min(st.clientWidth / RENDER_WIDTH, st.clientHeight / RENDER_HEIGHT) || 1; };
+function layoutBegin(id, ax, ay) {   // canvas HUD groups: move and scale around their own centre
+  const l = LAYOUT[id]; if (!l) return false;
+  const k = viewK(); ctx.save(); ctx.translate(ax + (l.dx || 0) / k, ay + (l.dy || 0) / k); ctx.scale(l.s || 1, l.s || 1); ctx.translate(-ax, -ay); return true;
+}
+function layoutEnd(on) { if (on) ctx.restore(); }
+
+function loadLayout() { try { const o = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null'); LAYOUT = o && typeof o === 'object' ? o : {}; } catch (e) { LAYOUT = {}; } }
+function saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(LAYOUT)); return true; } catch (e) { return false; } }
+function applyLayout() {
+  for (const id in DOMEL) {
+    if (id === 'map' && mm.t > 0) continue;   // the full-screen animation positions it by itself
+    const l = LAYOUT[id] || {}, sc = l.s || 1;
+    for (const eid of DOMEL[id]) { const el = document.getElementById(eid); el.style.translate = (l.dx || 0) + 'px ' + (l.dy || 0) + 'px'; el.style.scale = sc; }
+  }
+  const l = LAYOUT.weapon || {}, sc = l.s || 1, m = document.getElementById('weaponMenu');   // the weapon menu stays attached to the ARMA button
+  m.style.translate = ((l.dx || 0) - 42 * (sc - 1)) + 'px ' + ((l.dy || 0) + 19 * (sc - 1)) + 'px'; m.style.scale = sc;
+  document.getElementById('joyBase').style.scale = (LAYOUT.joy && LAYOUT.joy.s) || 1;
+}
+function rectOf(id) {   // where an element is on screen, in stage pixels
+  const st = document.getElementById('stage'), sr = st.getBoundingClientRect();
+  if (id === 'joy' || DOMEL[id]) {
+    const r = document.getElementById(id === 'joy' ? 'joyBase' : DOMEL[id][0]).getBoundingClientRect();
+    return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+  }
+  const b = CVBOX[id], k = viewK(), l = LAYOUT[id] || {}, sc = l.s || 1;
+  const cx = (st.clientWidth - RENDER_WIDTH * k) / 2 + b.cx * k + (l.dx || 0), cy = (st.clientHeight - RENDER_HEIGHT * k) / 2 + b.cy * k + (l.dy || 0);
+  return { x: cx - b.w * sc * k / 2, y: cy - b.h * sc * k / 2, w: b.w * sc * k, h: b.h * sc * k };
+}
+function clampLayoutEl(id) {   // keep an element inside the screen
+  if (id === 'joy' || (id === 'map' && mm.t > 0)) return;
+  const st = document.getElementById('stage'), W = st.clientWidth, H = st.clientHeight, r = rectOf(id);
+  if (!r.w || !r.h) return;
+  let ddx = 0, ddy = 0;
+  if (r.x < 2) ddx = 2 - r.x; else if (r.x + r.w > W - 2) ddx = W - 2 - (r.x + r.w);
+  if (r.y < 2) ddy = 2 - r.y; else if (r.y + r.h > H - 2) ddy = H - 2 - (r.y + r.h);
+  if (ddx || ddy) { const l = LAYOUT[id] || (LAYOUT[id] = { dx: 0, dy: 0, s: 1 }); l.dx = (l.dx || 0) + ddx; l.dy = (l.dy || 0) + ddy; applyLayout(); }
+}
+
+function releaseInputs() { pads.forEach(f => f()); for (const k in input) input[k] = false; }
+function setPaused(on) {
+  if (!gameStarted || endShown || ed.on) return;
+  paused = on;
+  document.getElementById('pauseMenu').classList.toggle('hide', !on);
+  if (on) {
+    releaseInputs(); toggleMinimap(false); toggleWeaponMenu(false); toggleKbHelp(false);
+    if (document.pointerLockElement) document.exitPointerLock();
+    if (audioCtx && audioCtx.suspend) audioCtx.suspend();
+  } else {
+    if (audioCtx && audioCtx.resume) audioCtx.resume();
+    if (kb.mouse) requestMouseLock();
+  }
+}
+
+// ---- interface editor ----
+function placeHandles() {
+  for (const [id] of ELEMS) { const r = rectOf(id), h = ed.handles[id]; h.style.left = r.x + 'px'; h.style.top = r.y + 'px'; h.style.width = r.w + 'px'; h.style.height = r.h + 'px'; }
+}
+function selectEl(id) {
+  ed.sel = id;
+  for (const k in ed.handles) ed.handles[k].classList.toggle('sel', k === id);
+  const size = document.getElementById('edSize'), val = document.getElementById('edVal'), r1 = document.getElementById('edReset1');
+  if (!id) { document.getElementById('edName').textContent = 'Tocca un elemento per modificarlo'; size.disabled = r1.disabled = true; val.textContent = ''; return; }
+  const sc = Math.round(((LAYOUT[id] && LAYOUT[id].s) || 1) * 100);
+  document.getElementById('edName').textContent = ELEMS.find(x => x[0] === id)[1];
+  size.disabled = r1.disabled = false; size.value = sc; val.textContent = sc + '%';
+}
+function buildHandles() {
+  const box = document.getElementById('edHandles'); box.innerHTML = ''; ed.handles = {};
+  let drag = null;
+  const end = (e) => { if (drag && drag.pid === e.pointerId) drag = null; };
+  for (const [id, label] of ELEMS) {
+    const h = document.createElement('div'); h.className = 'edh'; h.innerHTML = '<b>' + label + '</b>';
+    h.addEventListener('pointerdown', (e) => {
+      e.preventDefault(); e.stopPropagation(); selectEl(id);
+      if (id === 'joy') return;   // the stick appears under your finger, so only its size can change
+      try { h.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      const l = LAYOUT[id] || (LAYOUT[id] = { dx: 0, dy: 0, s: 1 });
+      drag = { id, x: e.clientX, y: e.clientY, dx: l.dx || 0, dy: l.dy || 0, pid: e.pointerId };
+    });
+    h.addEventListener('pointermove', (e) => {
+      if (!drag || drag.pid !== e.pointerId) return;
+      const l = LAYOUT[drag.id]; l.dx = drag.dx + e.clientX - drag.x; l.dy = drag.dy + e.clientY - drag.y;
+      applyLayout(); clampLayoutEl(drag.id);
+    });
+    h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+    box.appendChild(h); ed.handles[id] = h;
+  }
+}
+function openEditor(from) {
+  ed.from = from; ed.backup = JSON.stringify(LAYOUT); ed.on = true;
+  document.getElementById('menu').classList.add('hide'); document.getElementById('pauseMenu').classList.add('hide');
+  const use = document.getElementById('btnUse'), th = document.getElementById('timerHud'), jb = document.getElementById('joyBase'), st = document.getElementById('stage');
+  ed.saved = { use: use.style.display, thText: th.textContent };
+  use.style.display = 'block'; th.style.display = 'block'; th.textContent = '\u23f1 9:00';   // show what is normally hidden
+  jb.style.left = (st.clientWidth * 0.16 - 64) + 'px'; jb.style.top = (st.clientHeight * 0.6 - 64) + 'px'; jb.style.bottom = 'auto'; jb.style.display = 'block'; jb.classList.add('active');
+  document.getElementById('edMsg').textContent = '';
+  applyLayout(); buildHandles(); selectEl(null); placeHandles();
+  document.getElementById('editor').classList.remove('hide');
+}
+function closeEditor(save) {
+  let ok = true;
+  if (save) ok = saveLayout(); else { LAYOUT = JSON.parse(ed.backup); applyLayout(); }
+  const finish = () => {
+    ed.on = false;
+    const use = document.getElementById('btnUse'), th = document.getElementById('timerHud'), jb = document.getElementById('joyBase');
+    use.style.display = ed.saved.use; th.style.display = TIMED ? 'block' : 'none'; th.textContent = ed.saved.thText; th._t = -1;
+    jb.style.display = 'none'; jb.classList.remove('active');
+    document.getElementById('editor').classList.add('hide');
+    document.getElementById(ed.from === 'pause' ? 'pauseMenu' : 'menu').classList.remove('hide');
+  };
+  if (ok) finish(); else { document.getElementById('edMsg').textContent = 'Salvataggio non riuscito: la disposizione vale solo per questa sessione.'; setTimeout(finish, 2200); }
+}
+function setupSettings() {
+  document.getElementById('btnSettings').addEventListener('click', () => openEditor('menu'));
+  document.getElementById('btnGear').addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); setPaused(true); });
+  document.getElementById('pRes').addEventListener('click', () => setPaused(false));
+  document.getElementById('pSet').addEventListener('click', () => openEditor('pause'));
+  document.getElementById('btnPMenu').addEventListener('click', () => relaunch(false));
+  const size = document.getElementById('edSize'), val = document.getElementById('edVal');
+  size.addEventListener('input', () => {
+    if (!ed.sel) return;
+    const l = LAYOUT[ed.sel] || (LAYOUT[ed.sel] = { dx: 0, dy: 0, s: 1 });
+    l.s = size.value / 100; val.textContent = size.value + '%'; applyLayout(); clampLayoutEl(ed.sel);
+  });
+  document.getElementById('edReset1').addEventListener('click', () => { if (ed.sel) { delete LAYOUT[ed.sel]; applyLayout(); selectEl(ed.sel); } });
+  document.getElementById('edResetAll').addEventListener('click', () => { LAYOUT = {}; applyLayout(); selectEl(ed.sel); });
+  document.getElementById('edCancel').addEventListener('click', () => closeEditor(false));
+  document.getElementById('edSave').addEventListener('click', () => closeEditor(true));
+  document.getElementById('editor').addEventListener('pointerdown', () => selectEl(null));
+  const pn = document.getElementById('edPanel'), grip = document.getElementById('edGrip');
+  let pd = null;
+  pn.addEventListener('pointerdown', (e) => e.stopPropagation());
+  grip.addEventListener('pointerdown', (e) => { e.preventDefault(); const r = pn.getBoundingClientRect(); pd = { x: e.clientX - r.left, y: e.clientY - r.top }; try { grip.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } });
+  grip.addEventListener('pointermove', (e) => {
+    if (!pd) return;
+    pn.style.transform = 'none';
+    pn.style.left = Math.max(0, Math.min(innerWidth - pn.offsetWidth, e.clientX - pd.x)) + 'px';
+    pn.style.top = Math.max(0, Math.min(innerHeight - pn.offsetHeight, e.clientY - pd.y)) + 'px';
+  });
+  grip.addEventListener('pointerup', () => { pd = null; }); grip.addEventListener('pointercancel', () => { pd = null; });
+  window.addEventListener('resize', () => { if (!ed.on) for (const [id] of ELEMS) clampLayoutEl(id); });
+}
+
 window.onload = () => {
   startAudioLoad();
   generateDemonSprites();
@@ -3910,6 +4125,8 @@ window.onload = () => {
   drawMiniLegend();
   const prefs = loadPrefs() || {};
   setupMenu(prefs);
+  loadLayout(); applyLayout(); for (const [id] of ELEMS) clampLayoutEl(id);
+  setupSettings();
   document.getElementById('btnRetry').addEventListener('click', () => { if (diffKey === 'hard') relaunch(true); else respawn(); });
   document.getElementById('btnMenu').addEventListener('click', () => relaunch(false));
   if (prefs.auto && DIFFS[prefs.diff]) { savePrefs({ diff: prefs.diff, timed: !!prefs.timed, auto: false }); startGame(prefs.diff, !!prefs.timed); }
