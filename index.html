@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Mini DOOM 3D</title>
+<title>Casteddish</title>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <style>
 * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -70,6 +70,61 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
 @keyframes mgSpark { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 15% { opacity: 1; } 100% { transform: translate(var(--dx), -24px) scale(.3); opacity: 0; } }
 @keyframes mgPulse { 50% { transform: scale(1.06); } }
 
+/* Start menu, end screen and level timer */
+#menu, #endScreen { position: absolute; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; transition: opacity .5s ease, visibility .5s; overflow: hidden; user-select: none; -webkit-user-select: none;
+  background: radial-gradient(ellipse at 50% 120%, rgba(200,60,10,.6), rgba(20,4,6,.94) 55%, #050203 100%); }
+#endScreen { z-index: 90; background: radial-gradient(ellipse at 50% 50%, rgba(60,6,8,.9), rgba(0,0,0,.96)); }
+#endScreen.win { background: radial-gradient(ellipse at 50% 50%, rgba(70,56,8,.9), rgba(0,0,0,.96)); }
+#endScreen:not(.hide) { transition-delay: .8s; }
+#menu.hide, #endScreen.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+.embers i { position: absolute; bottom: -10px; left: var(--x); width: 4px; height: 4px; border-radius: 50%; background: #ff9a2e; box-shadow: 0 0 8px 2px #ff6a1a; opacity: 0;
+  animation: ember 6s linear infinite; animation-delay: var(--d); }
+@keyframes ember { 0% { transform: translate(0, 0) scale(1); opacity: 0; } 10% { opacity: .9; } 100% { transform: translate(var(--dx), -105vh) scale(.3); opacity: 0; } }
+#title { margin: 0; font-family: Impact, 'Arial Black', Haettenschweiler, sans-serif; font-size: clamp(40px, 24vh, 128px); line-height: 1; letter-spacing: .05em; text-transform: uppercase;
+  display: flex; filter: drop-shadow(0 0 16px rgba(255,90,20,.65)); animation: titlePulse 2.4s ease-in-out infinite; }
+#title span { display: inline-block; color: transparent; -webkit-background-clip: text; background-clip: text; -webkit-text-stroke: 1.5px #3a0a04;
+  background-image: linear-gradient(180deg, #ff7a1a 0%, #ffd23a 16%, #fff6c0 25%, #ffd23a 34%, #ff7a1a 50%, #c81414 75%, #ff7a1a 100%); background-size: 100% 200%;
+  animation: letterWave 2.2s ease-in-out infinite, fireShift 3s linear infinite; animation-delay: calc(var(--i) * .12s), 0s; }
+@keyframes letterWave { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-.07em) rotate(1.5deg); } }
+@keyframes fireShift { to { background-position: 0 2em; } }
+@keyframes titlePulse { 50% { filter: drop-shadow(0 0 30px rgba(255,140,40,.95)); } }
+.sub { margin: 8px 0 8px; font-size: clamp(11px, 3.2vh, 18px); letter-spacing: .35em; color: #ffcf8a; text-transform: uppercase; text-shadow: 0 0 10px rgba(255,120,30,.8); }
+.diffs { display: flex; gap: 10px; margin: 2px 0 6px; }
+.diffs button { cursor: pointer; border: 2px solid #6a2a1a; background: linear-gradient(180deg, #2a0f10, #140607); color: #ffd9a8; font: bold clamp(12px, 3.4vh, 17px) 'Trebuchet MS', sans-serif;
+  letter-spacing: .12em; padding: .7em 1.4em; border-radius: 12px; box-shadow: 0 4px 0 #050101; transition: transform .12s, box-shadow .12s; touch-action: manipulation; }
+.diffs button:active { transform: translateY(2px); box-shadow: 0 2px 0 #050101; }
+.diffs button.sel { border-color: #ffb13a; background: linear-gradient(180deg, #ff7a1a, #b01a0a); color: #fff; box-shadow: 0 0 18px rgba(255,120,30,.7), 0 4px 0 #3a0a04; }
+.desc { font-size: clamp(10px, 2.8vh, 13px); color: #d8b79a; min-height: 1.3em; margin-bottom: 6px; }
+#timedRow { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: bold; letter-spacing: .1em; font-size: clamp(11px, 3vh, 15px); color: #ffe0b0; margin-bottom: 10px; transition: opacity .25s; touch-action: manipulation; }
+#timedRow small { font-weight: normal; letter-spacing: 0; color: #b99a80; }
+#timedRow.off { opacity: .35; pointer-events: none; }
+.sw { width: 44px; height: 24px; border-radius: 14px; background: #2a1a1a; border: 2px solid #6a2a1a; position: relative; transition: background .2s, border-color .2s; }
+.sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #c9a58a; transition: transform .2s, background .2s; }
+#timedRow.on .sw { background: #b01a0a; border-color: #ffb13a; } #timedRow.on .sw::after { transform: translateX(20px); background: #fff; }
+#btnStart, .endBtns button { cursor: pointer; border: none; font: bold clamp(16px, 5vh, 26px) Impact, 'Arial Black', sans-serif; letter-spacing: .2em; padding: .5em 1.8em; border-radius: 40px; color: #fff;
+  background: linear-gradient(180deg, #ff9a2e, #d3200c); box-shadow: 0 0 24px rgba(255,100,20,.8), 0 5px 0 #4a0a04; touch-action: manipulation; }
+#btnStart { animation: startPulse 1.4s ease-in-out infinite; }
+@keyframes startPulse { 50% { transform: scale(1.06); box-shadow: 0 0 38px rgba(255,140,40,1), 0 5px 0 #4a0a04; } }
+#endTitle { margin: 0; font: bold clamp(30px, 14vh, 70px) Impact, 'Arial Black', sans-serif; letter-spacing: .08em; color: #ff4a3a; text-shadow: 0 0 24px rgba(255,60,30,.8), 0 3px 0 #300; }
+#endScreen.win #endTitle { color: #ffd23a; text-shadow: 0 0 24px rgba(255,210,60,.8), 0 3px 0 #430; }
+#endSub { margin: 4px 0 10px; font-size: clamp(11px, 3vh, 15px); color: #e8cdb4; }
+.stats { display: grid; grid-template-columns: auto auto; gap: 5px 30px; margin-bottom: 12px; font: clamp(12px, 3.5vh, 17px) 'Trebuchet MS', sans-serif; text-align: left; }
+.stats b { text-align: right; color: #ffd23a; }
+.endBtns { display: flex; gap: 12px; }
+.endBtns button { font-size: clamp(12px, 3.6vh, 18px); padding: .6em 1.4em; }
+.endBtns button#btnMenu { background: linear-gradient(180deg, #4a4a58, #22222c); box-shadow: 0 5px 0 #0a0a10; }
+#timerHud { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; display: none; font: bold 22px 'Courier New', monospace; color: #fff;
+  padding: 2px 16px; border-radius: 20px; background: rgba(0,0,0,.55); border: 2px solid rgba(255,255,255,.35); text-shadow: 0 1px 3px #000; }
+#timerHud.low { color: #ff5a4a; border-color: #ff3b30; animation: timerBlink .7s steps(2) infinite; }
+@keyframes timerBlink { 50% { background: rgba(120,0,0,.75); } }
+.kbh { display: none; margin-top: 12px; font-size: clamp(10px, 2.8vh, 13px); color: #c9a58a; letter-spacing: .04em; }
+#kbHelp { display: none; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 60; pointer-events: none; padding: 12px 18px; border-radius: 14px;
+  background: rgba(8,6,12,.88); border: 2px solid #ffb13a; box-shadow: 0 0 22px rgba(255,120,30,.45); font: 13px 'Trebuchet MS', sans-serif; color: #fff; }
+#kbHelp h3 { margin: 0 0 8px; text-align: center; font: bold 14px Impact, 'Arial Black', sans-serif; letter-spacing: .15em; color: #ffd23a; }
+#kbHelp div { display: grid; grid-template-columns: auto auto auto auto; gap: 3px 16px; }
+#kbHelp kbd { display: inline-block; min-width: 1.5em; padding: 1px 6px; margin-right: 3px; border-radius: 5px; background: #2a2a38; border: 1px solid #5a5a70; border-bottom-width: 2px; font: bold 12px 'Courier New', monospace; text-align: center; }
+
 /* Minimap: small corner box, grows to full screen on tap (position/size/zoom are driven from JS) */
 #miniBox { box-sizing: border-box; position: absolute; top: 8px; right: max(8px, env(safe-area-inset-right)); width: 96px; height: 96px;
   background: rgba(0,0,0,.7); border: 2px solid rgba(220,38,38,.8); border-radius: 8px; overflow: hidden; padding: 2px; cursor: pointer; touch-action: none; z-index: 20; }
@@ -82,9 +137,42 @@ body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color:
   <canvas id="gameCanvas" class="image-render-pixelated" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;"></canvas>
   <div id="damageOverlay" style="position:absolute;inset:0;pointer-events:none;background:rgba(220,38,38,0);transition:background-color .1s;"></div>
   <div style="position:absolute;top:4px;left:50%;transform:translateX(-50%);pointer-events:none;font-size:11px;font-weight:bold;white-space:nowrap;text-shadow:0 1px 2px #000;z-index:20;">
-    <span style="color:#ef4444">DOOM 3D</span> <span id="fpsDisplay" style="color:#9ca3af">FPS: 60</span> &nbsp;
+    <span style="color:#ef4444">CASTEDDISH</span> <span id="fpsDisplay" style="color:#9ca3af">FPS: 60</span> &nbsp;
     <span style="color:#facc15">HP: <span id="hpDisplay" style="color:#fff">100</span>%</span> &nbsp;
     <span style="color:#f87171">KILLS: <span id="killsDisplay" style="color:#fff">0</span></span>
+  </div>
+  <div id="timerHud">0:00</div>
+  <div id="kbHelp"><h3>COMANDI TASTIERA E MOUSE</h3><div>
+    <span><kbd>W</kbd><kbd>S</kbd> / <kbd>↑</kbd><kbd>↓</kbd></span><span>avanti / indietro</span>
+    <span><kbd>A</kbd><kbd>D</kbd></span><span>passo laterale</span>
+    <span><kbd>Q</kbd><kbd>E</kbd> / <kbd>←</kbd><kbd>→</kbd></span><span>ruota</span>
+    <span><kbd>SPAZIO</kbd></span><span>spara (tieni premuto)</span>
+    <span><kbd>1</kbd>–<kbd>8</kbd></span><span>scegli l'arma</span>
+    <span><kbd>R</kbd></span><span>arma successiva</span>
+    <span><kbd>F</kbd></span><span>apri forziere</span>
+    <span><kbd>G</kbd></span><span>magia di fuoco</span>
+    <span><kbd>M</kbd></span><span>mappa a schermo intero</span>
+    <span><kbd>H</kbd></span><span>mostra / nascondi questo aiuto</span>
+    <span><kbd>MOUSE</kbd></span><span>muovi: ruota la visuale</span>
+    <span><kbd>CLIC SX</kbd></span><span>spara</span>
+    <span><kbd>CLIC DX</kbd></span><span>magia di fuoco</span>
+    <span><kbd>ROTELLA</kbd></span><span>cambia arma</span>
+    <span><kbd>ESC</kbd></span><span>chiudi mappa e menù, libera il mouse</span></div></div>
+  <div id="menu">
+    <div class="embers"><i style="--x:8%;--d:0s;--dx:20px"></i><i style="--x:19%;--d:1.4s;--dx:-30px"></i><i style="--x:31%;--d:3.1s;--dx:25px"></i><i style="--x:43%;--d:.7s;--dx:-15px"></i><i style="--x:55%;--d:2.4s;--dx:35px"></i><i style="--x:66%;--d:4.2s;--dx:-25px"></i><i style="--x:77%;--d:1.9s;--dx:15px"></i><i style="--x:88%;--d:3.6s;--dx:-35px"></i><i style="--x:25%;--d:5s;--dx:10px"></i><i style="--x:72%;--d:.3s;--dx:-10px"></i></div>
+    <h1 id="title"><span style="--i:0">C</span><span style="--i:1">A</span><span style="--i:2">S</span><span style="--i:3">T</span><span style="--i:4">E</span><span style="--i:5">D</span><span style="--i:6">D</span><span style="--i:7">I</span><span style="--i:8">S</span><span style="--i:9">H</span></h1>
+    <div class="sub">Imposta la difficoltà</div>
+    <div class="diffs"><button data-d="easy">FACILE</button><button data-d="normal">MEDIA</button><button data-d="hard">DIFFICILE</button></div>
+    <div class="desc" id="diffDesc"></div>
+    <div id="timedRow"><div class="sw"></div><span>MODALITÀ A TEMPO <small>(solo Difficile)</small></span></div>
+    <button id="btnStart">INIZIA</button>
+    <div class="kbh" id="kbHint">⌨ &nbsp;←/→ scegli la difficoltà &nbsp;·&nbsp; T modalità a tempo &nbsp;·&nbsp; INVIO inizia</div>
+  </div>
+  <div id="endScreen" class="hide">
+    <h2 id="endTitle">SEI MORTO</h2>
+    <div id="endSub"></div>
+    <div class="stats" id="endStats"></div>
+    <div class="endBtns"><button id="btnRetry">RIPROVA</button><button id="btnMenu">MENU PRINCIPALE</button></div>
   </div>
   <div id="touchLayer" style="position:absolute;inset:0;z-index:15;touch-action:none;"></div>
   <div id="miniShade" style="position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:19;"></div>
@@ -717,7 +805,7 @@ function loadFloor(f) {
   else {
     // Spread the enemies out: far from the start (nobody reaches you at once) and never bunched together
     const placed = [];
-    for (let i = 0; i < [50, 60, 70, 65][f]; i++) {
+    for (let i = 0; i < Math.round([50, 60, 70, 65][f] * DIFF.count); i++) {
       let q = null;
       for (const [minD, sp] of [[22, 4], [20, 3.2], [20, 2.6], [20, 2.2], [16, 2]]) {
         for (let t = 0; t < 120 && !q; t++) {
@@ -767,11 +855,12 @@ function loadFloor(f) {
     rooms.filter(r => r !== start && r !== sroom && r.w * r.h >= 25 && dd[r.cy * N + r.cx] >= 12 && dd[r.cy * N + r.cx] < 9999)
       .map(r => ({ r, cand: tunnelCells(r) })).filter(o => spaced(o.cand, 99).length >= 5)
       .sort(() => srand() - 0.5).slice(0, [1, 2, 2, 2][f])
-      .forEach(o => hordes.push({ r: o.r, cand: o.cand, n: [10, 10, 10, 12][f], type: ENEMY_OF[f], fired: false, q: [], tt: 0, snd: false }));
+      .forEach(o => hordes.push({ r: o.r, cand: o.cand, n: Math.max(4, Math.round([10, 10, 10, 12][f] * DIFF.count)), type: ENEMY_OF[f], fired: false, q: [], tt: 0, snd: false }));
   }
 
   player.x = start.cx + 0.5; player.y = start.cy + 0.5;
   player.dirX = 1; player.dirY = 0; player.planeX = 0; player.planeY = 0.9; player.pitch = 0;
+  startLevelState(f);
   buildTextures(f); fieldT = 0;
   say('PIANO ' + (f + 1) + ': ' + FLOOR_NAMES[f]); toastT = 3;
 }
@@ -788,8 +877,8 @@ const TYPES = {
 };
 const mkEnemy = (x, y, type) => {
   const T = TYPES[type], z0 = T.lift || 0;
-  return { x, y, type, hp: T.hp, alive: true, state: 'walk', frame: 0, animTimer: 0, deathTimer: 0,
-    r: T.r || 0.45, z0, z1: z0 + T.sc + 0.1, shotT: 1 + Math.random(), cast: 0, t: 0, waves: 0, sumT: 0, mhp: T.hp, vT: 1 + Math.random() * 3, vC: 0, v: Math.floor(Math.random() * 5) };
+  return { x, y, type, hp: T.hp * DIFF.hp, alive: true, state: 'walk', frame: 0, animTimer: 0, deathTimer: 0,
+    r: T.r || 0.45, z0, z1: z0 + T.sc + 0.1, shotT: 1 + Math.random(), cast: 0, t: 0, waves: 0, sumT: 0, mhp: T.hp * DIFF.hp, vT: 1 + Math.random() * 3, vC: 0, v: Math.floor(Math.random() * 5) };
 };
 let enemies = [], hordes = [];
 let projectiles = [], explosions = [];
@@ -797,6 +886,9 @@ let isFiring = false, fireAnimFrame = 0, fireTimer = 0, fireCooldown = 0, audioC
 
 // Keyboard / rotation-button state
 const input = { fwd: false, back: false, strafeL: false, strafeR: false, rotL: false, rotR: false };
+// Keyboard commands switch on only on a PC (mouse + hover) or as soon as a real keyboard key is pressed (tablet or phone with a keyboard attached)
+const kb = { on: false, mouse: false };
+let menuApi = null;
 // Analog joystick state: x (right +), y (down +), both in [-1, 1]
 const joy = { x: 0, y: 0, id: null };
 
@@ -2456,7 +2548,8 @@ function makeTouchZones() {
   const endJoy = () => { jid = null; joy.id = null; joy.x = joy.y = 0; base.style.display = 'none'; base.classList.remove('active'); knob.style.transform = 'translate(0px, 0px)'; };
   layer.addEventListener('pointerdown', (e) => {
     e.preventDefault(); initAudio();
-    if (player.hp <= 0 || won) { location.reload(); return; }
+    if (player.hp <= 0 || won || !gameStarted) return;
+    if (e.pointerType === 'mouse' && stage.requestPointerLock) { kb.mouse = true; requestMouseLock(); return; }
     if (e.clientX < innerWidth / 2) {
       if (jid !== null) return;
       jid = e.pointerId; joy.id = jid; jx = e.clientX; jy = e.clientY;
@@ -2517,33 +2610,68 @@ function setupJoystick() {
   document.addEventListener('visibilitychange', () => { if (document.hidden) resetAll(); });
   const lifted = (e) => { if (e.touches && e.touches.length === 0) resetAll(); };
   window.addEventListener('touchend', lifted, { passive: true }); window.addEventListener('touchcancel', lifted, { passive: true });
-  document.getElementById('gameCanvas').addEventListener('pointerdown', () => { if (player.hp <= 0 || won) location.reload(); });
+}
+
+function requestMouseLock() {
+  const st = document.getElementById('stage');
+  if (!st.requestPointerLock || document.pointerLockElement === st) return;
+  try { const r = st.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (err) { /* not allowed right now */ }
+}
+function toggleKbHelp(force) {
+  const h = document.getElementById('kbHelp'), show = force === undefined ? h.style.display !== 'block' : force;
+  h.style.display = show ? 'block' : 'none';
+}
+function menuKey(e, k) {   // start menu: arrows / 1-3 choose the difficulty, T toggles timed mode, Enter starts
+  if (!menuApi) return;
+  if (k === 'arrowleft' || k === 'a') menuApi.move(-1);
+  else if (k === 'arrowright' || k === 'd') menuApi.move(1);
+  else if (k === '1' || k === '2' || k === '3') menuApi.pick(+k - 1);
+  else if (k === 't') menuApi.timed();
+  else if (k === 'enter' || k === ' ') menuApi.start();
+  else return;
+  e.preventDefault();
+}
+function endKey(e, k) {   // end screen: Enter retries (or goes back to the menu after a win), Esc / M go to the main menu
+  if (k === 'enter' || k === ' ') { const r = document.getElementById('btnRetry'); (r.style.display === 'none' ? document.getElementById('btnMenu') : r).click(); }
+  else if (k === 'escape' || k === 'm') document.getElementById('btnMenu').click();
+  else return;
+  e.preventDefault();
 }
 
 function setupInput() {
+  const throwable = () => WEAPONS[cur].kind === 'molotov' || WEAPONS[cur].kind === 'grenade';
+  const enableKb = () => {
+    if (kb.on) return;
+    kb.on = true; document.getElementById('kbHint').style.display = 'block';
+    if (gameStarted) { say('TASTIERA ATTIVA - PREMI H PER I COMANDI'); }
+  };
+  try { if (matchMedia('(pointer: fine) and (hover: hover)').matches) enableKb(); } catch (err) { /* no matchMedia */ }
   window.addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;   // leave browser shortcuts alone
+    if (!kb.on) { if (!e.isTrusted) return; enableKb(); }
+    const k = e.key.toLowerCase();
     initAudio();
-    switch (e.key.toLowerCase()) {
+    if (!gameStarted) { menuKey(e, k); return; }
+    if (endShown && !document.getElementById('endScreen').classList.contains('hide')) { endKey(e, k); return; }
+    let used = true;
+    switch (k) {
       case 'w': case 'arrowup': input.fwd = true; break;
       case 's': case 'arrowdown': input.back = true; break;
       case 'a': input.strafeL = true; break;
       case 'd': input.strafeR = true; break;
       case 'q': case 'arrowleft': input.rotL = true; break;
       case 'e': case 'arrowright': input.rotR = true; break;
-      case ' ': fireWeapon(); break;
-      case '1': switchWeapon(0); break;
-      case '2': switchWeapon(1); break;
-      case '3': switchWeapon(2); break;
-      case '4': switchWeapon(3); break;
-      case '5': switchWeapon(4); break;
-      case '6': switchWeapon(5); break;
-      case '7': switchWeapon(6); break;
-      case '8': switchWeapon(7); break;
+      case ' ': if (!e.repeat) { if (throwable()) fireWeapon(THROW_STD); else input.fire = true; } break;
+      case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': switchWeapon(+k - 1); toggleWeaponMenu(false); break;
       case 'f': tryUse(); break;
       case 'r': cycleWeapon(); break;
       case 'g': castMagic(); break;
       case 'm': toggleMinimap(); break;
+      case 'h': case '?': toggleKbHelp(); break;
+      case 'escape': toggleMinimap(false); toggleWeaponMenu(false); toggleKbHelp(false); break;
+      default: used = false;
     }
+    if (used) e.preventDefault();
   });
   window.addEventListener('keyup', (e) => {
     switch (e.key.toLowerCase()) {
@@ -2553,8 +2681,30 @@ function setupInput() {
       case 'd': input.strafeR = false; break;
       case 'q': case 'arrowleft': input.rotL = false; break;
       case 'e': case 'arrowright': input.rotR = false; break;
+      case ' ': input.fire = false; break;
     }
   });
+
+  // ---- Mouse (PC): click the screen to capture the pointer. Move = turn, left click = fire, right click = fire magic, wheel = change weapon ----
+  const stage = document.getElementById('stage'), locked = () => document.pointerLockElement === stage, live = () => gameStarted && !endShown && player.hp > 0 && !won;
+  try { if (matchMedia('(pointer: fine) and (hover: hover)').matches) kb.mouse = true; } catch (err) { /* no matchMedia */ }
+  window.addEventListener('mousemove', (e) => { if (locked() && live()) look.dx += e.movementX * 0.45; });
+  window.addEventListener('mousedown', (e) => {
+    if (!locked() || !live()) return;
+    e.preventDefault(); initAudio();
+    if (e.button === 0) { if (throwable()) fireWeapon(THROW_STD); else input.fire = true; }
+    else if (e.button === 2) castMagic();
+  });
+  window.addEventListener('mouseup', (e) => { if (e.button === 0) input.fire = false; });
+  let wheelAcc = 0, wheelT = 0;
+  window.addEventListener('wheel', (e) => {
+    if (!locked() || !live()) return;
+    e.preventDefault();
+    wheelAcc += e.deltaY; const now = performance.now();
+    if (Math.abs(wheelAcc) >= 40 && now - wheelT > 140) { stepWeapon(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; wheelT = now; }
+  }, { passive: false });
+  window.addEventListener('contextmenu', (e) => { if (locked() || kb.mouse) e.preventDefault(); });
+  document.addEventListener('pointerlockchange', () => { if (!locked()) input.fire = false; });
 
   function attachControl(btnId, key) {
     const btn = document.getElementById(btnId);
@@ -2594,6 +2744,12 @@ let cur = 0, toast = '', toastT = 0;
 const say = (t) => { toast = t; toastT = 2; };
 
 function switchWeapon(i) { if (owned[i] && ammo[i] > 0 && cur !== i) { cur = i; fireCooldown = 0.15; sfx('switch', 0.6); } }
+function stepWeapon(dir) {
+  for (let k = 1; k <= NW; k++) {
+    const i = (cur + dir * k + NW * 2) % NW;
+    if (owned[i] && ammo[i] > 0) { cur = i; fireCooldown = 0.15; sfx('switch', 0.6); return; }
+  }
+}
 function cycleWeapon() {
   for (let k = 1; k <= NW; k++) {
     const i = (cur + k) % NW;
@@ -2717,7 +2873,7 @@ function fireWeapon(pw) {
   if (fireCooldown > 0 || player.hp <= 0 || won) return;
   if (ammo[cur] <= 0) { cur = 0; return; }
   const w = WEAPONS[cur], kind = w.kind || 'bullet';
-  fireCooldown = w.cd; ammo[cur]--;
+  fireCooldown = w.cd; ammo[cur]--; stats.shots++;
   isFiring = true; fireAnimFrame = 1; fireTimer = 0;
   const SN = ['shot_pistol', 'shot_shotgun', 'shot_rifle', 'rocket', 'throw', 'throw', null, 'plasma'][cur];
   if (SN) sfx(SN, cur === 0 ? 0.9 : 1);
@@ -2804,6 +2960,7 @@ function hurtProp(q, d, silent) {
   const mat = q.mat || 'wood', sn = SNDM[mat];
   if (!silent) sfxAt(sn[0], q.x, q.y, 10, 0.8, false);
   if (q.hp > 0) return;
+  stats.objects++; stats.dollars += q.type === 'crate' ? 180 : ({ wood: 220, stone: 1400, metal: 900, glass: 2600, bone: 450, rust: 600 }[mat] || 300);
   props.splice(props.indexOf(q), 1); if (q.solid !== false) blk[q.cell] = 0;
   sfxAt(sn[1], q.x, q.y, 14, 1);
   for (let i = 0; i < 9; i++) { const a = Math.random() * 6.28, sp = 1 + Math.random() * 2.2; debris.push({ x: q.x, y: q.y, z: 0.2 + Math.random() * 0.3, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, vz: 1.5 + Math.random() * 2, life: 1.0, mat }); }
@@ -2883,6 +3040,7 @@ const eShots = [], field = new Int16Array(N * N);
 
 function hurt(d) {
   if (player.hp <= 0 || won) return;
+  d *= DIFF.dmg;
   if (armor.t >= 0 && armor.ap > 0) {
     const a = Math.min(armor.ap, d * ARMORS[armor.t].abs); armor.ap -= a; d -= a;
     if (armor.ap <= 0) { armor.t = -1; armor.ap = 0; say('ARMATURA DISTRUTTA'); sfx('armor_break', 0.9); }
@@ -2923,6 +3081,43 @@ function chase(e, dt, spd, dist) {
   if (!isWall(e.x, e.y + my)) e.y += my;
 }
 
+// Enemies that have not noticed you yet: a slow stroll around the place they spawned, with now and then a longer stop in front of an object (a prop or an item on the floor)
+function wander(e, dt) {
+  const w = e.wn || (e.wn = { mode: 'pause', t: Math.random() * 2.5, hx: e.x, hy: e.y, tx: e.x, ty: e.y, look: false, stuck: 0 });
+  const spd = TYPES[e.type].spd * 0.28;
+  if (w.mode === 'pause') {
+    e.frame = 0; e.animTimer = 0; e.state = 'walk';
+    if ((w.t -= dt) > 0) return;
+    let pick = null;
+    if (Math.random() < 0.55) {   // go and look at something nearby
+      const near = [];
+      for (const q of props) if (Math.hypot(q.x - e.x, q.y - e.y) < 7) near.push(q);
+      for (const q of pickups) if (!q.taken && Math.hypot(q.x - e.x, q.y - e.y) < 7) near.push(q);
+      if (near.length) {
+        const q = near[Math.floor(Math.random() * near.length)], d = Math.hypot(q.x - e.x, q.y - e.y) || 1;
+        const tx = q.x - (q.x - e.x) / d, ty = q.y - (q.y - e.y) / d;   // stop one cell short of it
+        if (!isWall(tx, ty) && Math.hypot(tx - w.hx, ty - w.hy) < 9 && los(e.x, e.y, tx, ty)) pick = { x: tx, y: ty, look: true };
+      }
+    }
+    for (let k = 0; k < 6 && !pick; k++) {   // otherwise a short walk, never far from where it started
+      const a = Math.random() * 6.28, r = 2 + Math.random() * 3, tx = e.x + Math.cos(a) * r, ty = e.y + Math.sin(a) * r;
+      if (!isWall(tx, ty) && Math.hypot(tx - w.hx, ty - w.hy) < 8 && los(e.x, e.y, tx, ty)) pick = { x: tx, y: ty, look: false };
+    }
+    if (!pick) { w.t = 1 + Math.random() * 2; return; }
+    w.tx = pick.x; w.ty = pick.y; w.look = pick.look; w.mode = 'walk'; w.stuck = 0;
+    return;
+  }
+  const dx = w.tx - e.x, dy = w.ty - e.y, d = Math.hypot(dx, dy);
+  if (d < 0.25 || w.stuck > 0.7) { w.mode = 'pause'; w.t = w.look && d < 0.6 ? 3 + Math.random() * 3.5 : 1 + Math.random() * 2.5; return; }
+  const mx = dx / d * spd * dt, my = dy / d * spd * dt, ox = e.x, oy = e.y;
+  if (!isWall(e.x + mx, e.y)) e.x += mx;
+  if (!isWall(e.x, e.y + my)) e.y += my;
+  w.stuck = Math.hypot(e.x - ox, e.y - oy) < spd * dt * 0.4 ? w.stuck + dt : 0;
+  e.state = 'walk';
+  e.animTimer += dt * 0.5;
+  if (e.animTimer > 0.15) { e.frame = (e.frame + 1) % 8; e.animTimer = 0; }
+}
+
 function summon(b) {
   const n = Math.min(12, 5 + 2 * b.waves++);
   for (let i = 0; i < n; i++) {
@@ -2941,6 +3136,13 @@ function update(dt) {
   if (toastT > 0) toastT -= dt;
   if (player.hp <= 0 || won || innerHeight > innerWidth) return;
   updateMagic(dt, rawDt);
+  stats.time += rawDt;
+  if (TIMED) {
+    timeLeft -= rawDt;
+    const th = document.getElementById('timerHud'), t = Math.max(0, Math.ceil(timeLeft));
+    if (t !== th._t) { th._t = t; th.textContent = '\u23f1 ' + Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); th.classList.toggle('low', t <= 30); }
+    if (timeLeft <= 0 && player.hp > 0) { deathCause = 'time'; player.hp = 0; }
+  }
 
   const inLiq = liq[(player.y | 0) * N + (player.x | 0)];
   const moveStep = player.moveSpeed * dt * (inLiq && curFloor === 3 ? 0.55 : 1);
@@ -3104,7 +3306,7 @@ function update(dt) {
       if (e.vT <= 0) { const w = e.hp < e.mhp; e.vT = (w ? 1.6 : 2.8) + Math.random() * 2; enemyVoice(e, w ? 'hurt' : 'idle'); }
     } else e.near = false;
     const T = TYPES[e.type], dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
-    if (e.type !== 'boss' && field[(e.y | 0) * N + (e.x | 0)] >= 18) continue;
+    if (e.type !== 'boss' && e.hp >= e.mhp && field[(e.y | 0) * N + (e.x | 0)] >= 18) { wander(e, dt); continue; }
     e.animTimer += dt;
     if (e.animTimer > 0.15) { e.frame = (e.frame + 1) % 8; e.animTimer = 0; }
     if (e.type === 'boss') {
@@ -3510,15 +3712,9 @@ function renderGun() {
   ctx.moveTo(cx - 6, H / 2); ctx.lineTo(cx - 2, H / 2); ctx.moveTo(cx + 2, H / 2); ctx.lineTo(cx + 6, H / 2);
   ctx.moveTo(cx, H / 2 - 6); ctx.lineTo(cx, H / 2 - 2); ctx.moveTo(cx, H / 2 + 2); ctx.lineTo(cx, H / 2 + 6); ctx.stroke();
   const boss = enemies.find(e => e.type === 'boss' && e.alive);
-  if (boss) { ctx.fillStyle = '#300'; ctx.fillRect(cx - 110, 38, 220, 6); ctx.fillStyle = '#d22'; ctx.fillRect(cx - 110, 38, 220 * Math.max(0, boss.hp) / TYPES.boss.hp, 6); }
+  if (boss) { ctx.fillStyle = '#300'; ctx.fillRect(cx - 110, 38, 220, 6); ctx.fillStyle = '#d22'; ctx.fillRect(cx - 110, 38, 220 * Math.max(0, boss.hp) / boss.mhp, 6); }
   if (toastT > 0) txt(toast, cx, H * 0.3, '#ffffff', 'center');
-  if (player.hp <= 0 || won) {
-    ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H);
-    ctx.font = 'bold 22px monospace';
-    txt(won ? 'VITTORIA!' : 'SEI MORTO', cx, H / 2 - 4, won ? '#77ff77' : '#ff4444', 'center');
-    ctx.font = 'bold 12px monospace';
-    txt('tocca per ricominciare', cx, H / 2 + 20, '#ffffff', 'center');
-  }
+  if (player.hp <= 0 || won) { ctx.fillStyle = 'rgba(0,0,0,.6)'; ctx.fillRect(0, 0, W, H); }
 }
 
 // ---- Minimap: tap to grow it to full screen (the view zooms out from the area around you to the whole level), tap again to shrink ----
@@ -3624,10 +3820,87 @@ function gameLoop(now) {
     document.getElementById('fpsDisplay').innerText = `FPS: ${frameCount}`;
     frameCount = 0; fpsTimer = 0;
   }
-  stepMinimap(dt);
-  update(dt);
+  if (gameStarted) { stepMinimap(dt); update(dt); if (!endShown && (player.hp <= 0 || won)) showEnd(); }
   render();
   requestAnimationFrame(gameLoop);
+}
+
+/* ---------- Difficulty, start menu, timed mode, end of run ---------- */
+const DIFFS = {
+  easy: { name: 'FACILE', count: 0.4, hp: 0.55, dmg: 0.5 },
+  normal: { name: 'MEDIA', count: 0.7, hp: 0.8, dmg: 0.75 },
+  hard: { name: 'DIFFICILE', count: 1, hp: 1, dmg: 1 }   // the rules the game had before the menu existed
+};
+const DESC = { easy: 'Pochi nemici, fragili e poco pericolosi', normal: 'Un buon equilibrio tra sfida e sopravvivenza', hard: 'Orde numerose, nemici resistenti e letali' };
+const LEVEL_TIME = [540, 600, 660, 660, 420];   // seconds allowed per floor in timed mode
+const stats = { time: 0, shots: 0, objects: 0, dollars: 0 };
+let DIFF = DIFFS.hard, diffKey = 'hard', TIMED = false, gameStarted = false, endShown = false, checkpoint = null, timeLeft = 0, deathCause = '';
+
+const loadPrefs = () => { try { return JSON.parse(localStorage.getItem('casteddish') || 'null'); } catch (e) { return null; } };
+const savePrefs = (o) => { try { localStorage.setItem('casteddish', JSON.stringify(o)); } catch (e) { /* storage unavailable */ } };
+function relaunch(auto) { savePrefs({ diff: diffKey, timed: TIMED, auto }); location.reload(); }
+
+// Called every time a floor starts: resets the floor timer and remembers weapons, ammo and health for the retry after a defeat
+function startLevelState(f) {
+  timeLeft = LEVEL_TIME[f] || 600;
+  checkpoint = { floor: f, hp: player.hp, armor: { t: armor.t, ap: armor.ap }, owned: owned.slice(), ammo: ammo.slice(), cur };
+}
+function resetRun() {
+  player.hp = 100; player.kills = 0; armor.t = -1; armor.ap = 0;
+  owned.fill(false); owned[0] = true; ammo.fill(0); ammo[0] = Infinity; cur = 0;
+  won = false; endShown = false; deathCause = '';
+  stats.time = stats.shots = stats.objects = stats.dollars = 0;
+  magic.t = 0; magic.ready = false; magic.burst = null; magic.shown = -1;
+  loadFloor(0);
+}
+function respawn() {   // easy / medium: back to the start of the last floor, with what you had when you entered it
+  const c = checkpoint;
+  won = false; endShown = false; deathCause = '';
+  loadFloor(c.floor);
+  player.hp = c.hp; armor.t = c.armor.t; armor.ap = c.armor.ap;
+  owned.splice(0, owned.length, ...c.owned); ammo.splice(0, ammo.length, ...c.ammo); cur = c.cur;
+  startLevelState(c.floor);
+  document.getElementById('endScreen').classList.add('hide');
+}
+function startGame(key, timed) {
+  diffKey = key; DIFF = DIFFS[key]; TIMED = !!timed && key === 'hard';
+  document.getElementById('menu').classList.add('hide');
+  initAudio(); resetRun();
+  const th = document.getElementById('timerHud'); th.style.display = TIMED ? 'block' : 'none'; th._t = -1;
+  gameStarted = true; lastTime = performance.now();
+  if (kb.on) { toggleKbHelp(true); setTimeout(() => toggleKbHelp(false), 6000); }
+  if (kb.mouse) { requestMouseLock(); setTimeout(() => { if (!document.pointerLockElement) say('CLICCA PER USARE IL MOUSE'); }, 500); }
+}
+function showEnd() {
+  endShown = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  const el = document.getElementById('endScreen'), soft = diffKey !== 'hard', win = won;
+  el.classList.toggle('win', win);
+  document.getElementById('endTitle').textContent = win ? 'VITTORIA!' : deathCause === 'time' ? 'TEMPO SCADUTO' : 'SEI MORTO';
+  document.getElementById('endSub').textContent = win ? 'Il castello è libero: Casteddish è salvo!' : soft ? 'Riparti dall\'inizio del piano ' + (checkpoint.floor + 1) + ' con le armi, le munizioni e la vita che avevi.' : 'In modalità difficile si riparte da zero.';
+  const retry = document.getElementById('btnRetry');
+  retry.style.display = win ? 'none' : ''; retry.textContent = soft ? 'RIPRENDI DAL PIANO ' + (checkpoint.floor + 1) : 'RICOMINCIA DA ZERO';
+  const t = Math.floor(stats.time), total = stats.dollars + player.kills * 500 + stats.shots * 6, f = (n) => n.toLocaleString('it-IT');
+  const rows = [['Tempo impiegato', Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0')], ['Nemici eliminati', f(player.kills)], ['Colpi sparati', f(stats.shots)], ['Oggetti distrutti', f(stats.objects)], ['Danni causati', '$ ' + f(total)]];
+  document.getElementById('endStats').innerHTML = rows.map(r => '<span>' + r[0] + '</span><b>' + r[1] + '</b>').join('');
+  el.classList.remove('hide');
+}
+function setupMenu(prefs) {
+  let sel = DIFFS[prefs.diff] ? prefs.diff : 'hard', timed = !!prefs.timed;
+  const btns = [...document.querySelectorAll('#menu .diffs button')], row = document.getElementById('timedRow'), desc = document.getElementById('diffDesc');
+  const paint = () => {
+    if (sel !== 'hard') timed = false;
+    btns.forEach(b => b.classList.toggle('sel', b.dataset.d === sel));
+    row.classList.toggle('off', sel !== 'hard'); row.classList.toggle('on', timed);
+    desc.textContent = DESC[sel] + (timed ? ' \u00b7 tempo limite per ogni piano' : '');
+  };
+  const order = ['easy', 'normal', 'hard'];
+  menuApi = { move: (d) => { sel = order[(order.indexOf(sel) + d + 3) % 3]; paint(); }, pick: (i) => { sel = order[i]; paint(); },
+    timed: () => { if (sel === 'hard') { timed = !timed; paint(); } }, start: () => document.getElementById('btnStart').click() };
+  btns.forEach(b => b.addEventListener('click', () => { sel = b.dataset.d; paint(); }));
+  row.addEventListener('click', () => { if (sel === 'hard') { timed = !timed; paint(); } });
+  document.getElementById('btnStart').addEventListener('click', () => { savePrefs({ diff: sel, timed, auto: false }); startGame(sel, timed); });
+  paint();
 }
 
 window.onload = () => {
@@ -3635,6 +3908,11 @@ window.onload = () => {
   generateDemonSprites();
   setupInput();
   drawMiniLegend();
+  const prefs = loadPrefs() || {};
+  setupMenu(prefs);
+  document.getElementById('btnRetry').addEventListener('click', () => { if (diffKey === 'hard') relaunch(true); else respawn(); });
+  document.getElementById('btnMenu').addEventListener('click', () => relaunch(false));
+  if (prefs.auto && DIFFS[prefs.diff]) { savePrefs({ diff: prefs.diff, timed: !!prefs.timed, auto: false }); startGame(prefs.diff, !!prefs.timed); }
   lastTime = performance.now();
   requestAnimationFrame(gameLoop);
 };
