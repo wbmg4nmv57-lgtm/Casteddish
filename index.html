@@ -914,9 +914,10 @@ const TYPES = {
   skel: { hp: 30, spd: 2.4, dmg: 6, sc: 0.5, r: 0.3, minion: true }
 };
 const mkEnemy = (x, y, type) => {
-  const T = TYPES[type], z0 = T.lift || 0;
+  const T = TYPES[type], z0 = T.lift || 0, v = Math.floor(Math.random() * VARS[type].length), hs = (VARS[type][v][2] && VARS[type][v][2].hs) || 1;
+  const roll = Math.random(), bh = type === 'demon' || type === 'ghoul' || type === 'witch' ? (roll < 0.68 ? 'normal' : roll < 0.84 ? 'coward' : 'feint') : 'normal';
   return { x, y, type, hp: T.hp * DIFF.hp, alive: true, state: 'walk', frame: 0, animTimer: 0, deathTimer: 0,
-    r: T.r || 0.45, z0, z1: z0 + T.sc + 0.1, shotT: 1 + Math.random(), cast: 0, t: 0, waves: 0, sumT: 0, mhp: T.hp * DIFF.hp, vT: 1 + Math.random() * 3, vC: 0, v: Math.floor(Math.random() * 5) };
+    r: T.r || 0.45, z0, z1: z0 + T.sc * hs + 0.1, shotT: 1 + Math.random(), cast: 0, t: 0, waves: 0, sumT: 0, mhp: T.hp * DIFF.hp, vT: 1 + Math.random() * 3, vC: 0, v, hs, bh, bs: 'idle', bt: 0, act: false, back: false };
 };
 let enemies = [], hordes = [];
 let projectiles = [], explosions = [];
@@ -1034,8 +1035,8 @@ const SPR = {};
 const boltCanvas = mk();
 let stairsSprite;
 
-function head(c, cx, cy, tilt, jaw, st) {
-  c.save(); c.translate(cx, cy); c.rotate(tilt);
+function head(c, cx, cy, tilt, jaw, st, back) {
+  c.save(); c.translate(cx, cy); c.rotate(tilt); c.scale(st.headS || 1, st.headS || 1);
   if (st.horn) {
     c.strokeStyle = st.horn; c.lineCap = 'round'; c.lineWidth = 4;
     for (const s of [-1, 1]) { c.beginPath(); c.moveTo(s * 8, -12); c.quadraticCurveTo(s * 19, -13, s * 16, -26); c.stroke(); }
@@ -1050,6 +1051,7 @@ function head(c, cx, cy, tilt, jaw, st) {
   const g = c.createLinearGradient(0, -15, 0, 5); g.addColorStop(0, st.c2); g.addColorStop(1, st.c1);
   c.fillStyle = g; c.strokeStyle = '#150404'; c.lineWidth = 1.5;
   c.beginPath(); c.ellipse(0, -5, st.hood ? 9 : 11, 10, 0, 0, 7); c.fill(); c.stroke();
+  if (!back) {
   for (const s of [-1, 1]) {
     if (st.skull) { c.fillStyle = '#000'; c.beginPath(); c.arc(s * 4, -6, 3, 0, 7); c.fill(); continue; }
     c.fillStyle = '#1a0505'; c.beginPath(); c.moveTo(s * 10, -11); c.lineTo(s * 1.5, -6); c.lineTo(s * 1.5, -11); c.fill();
@@ -1066,6 +1068,11 @@ function head(c, cx, cy, tilt, jaw, st) {
       c.fillRect(i * 2 - 1, 3 + jo, 2, 2);
     }
   }
+  } else {   // seen from behind: no face, just the back of the skull and the ears
+    c.fillStyle = 'rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(0, -7, st.hood ? 8 : 10, 8, 0, 0, 7); c.fill();
+    for (const sd of [-1, 1]) { c.fillStyle = st.limb; c.strokeStyle = '#150404'; c.lineWidth = 1; c.beginPath(); c.ellipse(sd * 11, -4, 2.6, 4, 0, 0, 7); c.fill(); c.stroke(); }
+    c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(0, -14); c.lineTo(0, -1); c.stroke();
+  }
   if (st.hat) {
     c.fillStyle = st.hat; c.beginPath(); c.ellipse(0, -12, 17, 4, 0, 0, 7); c.fill();
     c.beginPath(); c.moveTo(-9, -12); c.lineTo(3, -28); c.lineTo(10, -12); c.fill();
@@ -1074,12 +1081,40 @@ function head(c, cx, cy, tilt, jaw, st) {
   c.restore();
 }
 
-// Five weapon variants per enemy type: [weapon kind, options]
+// Variants per enemy type: [weapon kind, weapon options, body shape]. Shape: hs = height, ws = width, belly, lw / lwR = limb widths, armL / armR = arm lengths,
+// headS = head size, hump = back lump, bend = lean, limp = dragging leg. Demons, ghouls and witches have 8 variants, the others 5.
 const VARS = {
-  demon: [['axe2'], ['mace', { blade: '#bfc6cc' }], ['trident', { blade: '#d86a2a', dark: '#8a2a0a' }], ['scimitar'], ['halberd', { handle: '#3a2a22' }]],
-  ghoul: [['club'], ['cleaver', { rust: 1, blade: '#a9a29a' }], ['flail', { blade: '#9a9aa2' }], ['trident', { blade: '#a8825a', dark: '#6b4a2e', handle: '#4a3a28' }], ['club', { bone: 1 }]],
+  demon: [
+    ['axe2'],
+    ['mace', { blade: '#bfc6cc' }, { ws: 0.78, lw: 4.5, hs: 1.04 }],                                     // thin
+    ['trident', { blade: '#d86a2a', dark: '#8a2a0a' }, { ws: 1.2, belly: 10, lw: 9, hs: 0.95 }],             // fat
+    ['scimitar', {}, { hs: 1.2, lw: 6, ws: 0.92 }],                                                       // tall
+    ['halberd', { handle: '#3a2a22' }, { hs: 0.8, ws: 1.08, headS: 1.12 }],                               // short
+    ['axe2', { blade: '#b9a27a', dark: '#6a5a3a', handle: '#3a2a22' }, { limp: 1, bend: -0.06 }],          // limping
+    ['hammer', { sc: 0.95 }, { armR: 1.5, lwR: 12, armL: 0.6, ws: 1.05 }],                                // giant right arm
+    ['cleaver', { rust: 1, blade: '#a9a29a' }, { hump: 12, headS: 1.35, hunch: 8, bend: 0.1, hs: 0.92 }]   // hunchback with a huge head
+  ],
+  ghoul: [
+    ['club'],
+    ['cleaver', { rust: 1, blade: '#a9a29a' }, { ws: 0.74, lw: 4, len: 1.4, hs: 1.08 }],
+    ['flail', { blade: '#9a9aa2' }, { ws: 1.22, belly: 9, lw: 8, len: 1.05, hs: 0.95 }],
+    ['trident', { blade: '#a8825a', dark: '#6b4a2e', handle: '#4a3a28' }, { limp: 1, hs: 1.18, bend: 0.05 }],
+    ['club', { bone: 1 }, { hs: 0.8, len: 1.1, headS: 1.15 }],
+    ['hammer', { blade: '#7a6a5a', dark: '#4a3a2a', handle: '#4a3a28', sc: 0.9 }, { limp: 1, armL: 1.3 }],
+    ['sword', { rust: 1, blade: '#9a9a8a' }, { armL: 1.7, armR: 0.75, lwR: 4 }],
+    ['mace', { blade: '#8a8a7a' }, { hump: 11, headS: 1.3, hunch: 9, hs: 0.9 }]
+  ],
   wraith: [['scythe', { ghost: 1 }], ['sword', { ghost: 1 }], ['lantern', { ghost: 1, glow: '#8fe8ff' }], ['spear', { ghost: 1 }], ['trident', { ghost: 1 }]],
-  witch: [['staff', { style: 0, orb: '#e060ff' }], ['staff', { style: 1, orb: '#4dff6a', handle: '#3a4a22' }], ['staff', { style: 2, orb: '#6fb8ff' }], ['staff', { style: 3, orb: '#ff4040' }], ['staff', { style: 4, orb: '#ffd23a' }]],
+  witch: [
+    ['staff', { style: 0, orb: '#e060ff' }],
+    ['staff', { style: 1, orb: '#4dff6a', handle: '#3a4a22' }, { ws: 0.8, hs: 1.08 }],
+    ['staff', { style: 2, orb: '#6fb8ff' }, { ws: 1.25, hs: 0.95 }],
+    ['staff', { style: 3, orb: '#ff4040' }, { hs: 1.2, ws: 0.9 }],
+    ['staff', { style: 4, orb: '#ffd23a' }, { hs: 0.78, ws: 1.05, headS: 1.15 }],
+    ['staff', { style: 1, orb: '#ff9a3a', handle: '#4a3020' }, { bend: 0.16, hunch: 7, hump: 10 }],
+    ['staff', { style: 0, orb: '#3affd0' }, { headS: 1.35, armR: 1.4, armL: 0.7 }],
+    ['staff', { style: 3, orb: '#ff4fd8' }, { limp: 1, bend: -0.1, hs: 0.95 }]
+  ],
   boss: [['hammer', { sc: 1.15 }], ['club', { sc: 1.2 }], ['axe2', { sc: 1.1, blade: '#e0b050', dark: '#8a6a20' }], ['mace', { sc: 1.2, blade: '#9a8a8a' }], ['cleaver', { sc: 1.25 }]],
   skel: [['sword', { rust: 1, blade: '#b8bcc4' }], ['cleaver', { sc: 0.85, rust: 1 }], ['spear'], ['mace', { sc: 0.85 }], ['scimitar', { blade: '#c0b8a0' }]]
 };
@@ -1218,18 +1253,24 @@ function heldWeapon(c, kind, x, y, b, o) {
 function drawDemon(c, mode, f, st) {
   c.clearRect(0, 0, DS, DS);
   c.scale(DS / 96, DS / 96);
+  const back = mode === 'flee', cower = mode === 'cower', walkLike = mode === 'walk' || back;
+  // body width variants; from behind the figure is mirrored, so the weapon hand switches side; cowering squashes it down
+  c.translate(48, 91); c.scale((st.ws || 1) * (back ? -1 : 1), cower ? 0.8 : 1); c.translate(-48, -91);
   if (mode !== 'die') { c.fillStyle = 'rgba(0,0,0,.35)'; c.beginPath(); c.ellipse(48, 91, 24 * (st.belly ? 1.3 : 1), 4.5, 0, 0, 7); c.fill(); }
-  const ph = f / 8 * Math.PI * 2, s = Math.sin(ph), u = f / 3, ln = st.len || 1, hy = 58 + (1 - ln) * 32;
-  let bob = 0, lean = 0, ht = 0, jaw = 0.15, LL = [-0.12, 0], LR = [0.12, 0], AL = [-0.4, 0.6], AR = [0.4, -0.6];
-  if (mode === 'walk') {
+  const ph = f / 8 * Math.PI * 2, s = Math.sin(ph), u = f / 3, ln = st.len || 1, hy = 58 + (1 - ln) * 32, lr = st.limp ? 0.8 : 1;
+  let bob = 0, lean = st.bend || 0, ht = 0, jaw = 0.15, LL = [-0.12, 0], LR = [0.12, 0], AL = [-0.4, 0.6], AR = [0.4, -0.6];
+  if (walkLike) {
     const a = Math.max(0, s), b = Math.max(0, -s);
     LL = [-0.12 - 0.3 * a, 0.7 * a]; LR = [0.12 + 0.3 * b, -0.7 * b];
     AL = [-0.35 - 0.35 * s, 0.6 + 0.3 * s]; AR = [0.35 - 0.35 * s, -0.6 + 0.3 * s];
-    bob = -Math.abs(s) * 2; lean = s * 0.05; ht = Math.sin(ph * 0.5) * 0.14; jaw = 0.2 + (s + 1) * 0.1;
+    bob = -Math.abs(s) * 2; lean += s * 0.05; ht = Math.sin(ph * 0.5) * 0.14; jaw = 0.2 + (s + 1) * 0.1;
+    if (st.limp) { LR = [0.05 + 0.1 * b, -0.25 * b]; bob = -Math.max(0, s) * 4; lean += -0.1 + s * 0.06; }   // one leg drags, the body dips on every step
+  } else if (cower) {   // crouched, arms up, begging
+    LL = [-0.55, 0.5]; LR = [0.55, -0.5]; AL = [-2.7, 0.3]; AR = [2.7, -0.3]; bob = f ? 1.5 : 0; ht = 0.28; jaw = 0.85; lean = 0.03 * (f ? 1 : -1);
   } else if (mode === 'attack') {
     LL = [-0.3, 0]; LR = [0.3, 0];
     AL = [-(2.7 - 2.4 * u), 0.5]; AR = st.weapon ? [1.2 - 0.9 * u, -0.4] : [2.7 - 2.4 * u, -0.5];
-    bob = -3 * (1 - u); lean = 0.08 * (1 - 2 * u); ht = -0.12 * (1 - u); jaw = 1 - 0.5 * u;
+    bob = -3 * (1 - u); lean += 0.08 * (1 - 2 * u); ht = -0.12 * (1 - u); jaw = 1 - 0.5 * u;
   } else {
     LL = [-0.5, 0.3]; LR = [0.5, -0.3];
     AL = [-1.3 + f * 0.2, 0.4]; AR = [1.3 - f * 0.2, -0.4]; ht = -0.35; jaw = 1; lean = -0.2;
@@ -1237,10 +1278,11 @@ function drawDemon(c, mode, f, st) {
     c.translate(48, 90); c.rotate([0.05, 0.2, 0.4, 0.7, 0.95][f]); c.scale(1, [1, 0.9, 0.75, 0.55, 0.38][f]); c.translate(-48, -90);
   }
   c.globalAlpha = st.alpha || 1;
+  if (cower && st.weapon) heldWeapon(c, st.weapon, 12, 88, 1.45, st.wopt);   // dropped on the floor
   const foot = (q) => { c.fillStyle = '#120303'; c.beginPath(); c.ellipse(q[0], q[1] + 1, 6, 3, 0, 0, 7); c.fill(); };
   if (!st.robe) {
     foot(limb(c, 41, hy, LL[0], 15 * ln, LL[1], 17 * ln, st.lw + 1, st.limb));
-    foot(limb(c, 55, hy, LR[0], 15 * ln, LR[1], 17 * ln, st.lw + 1, st.limb));
+    foot(limb(c, 55, hy, LR[0], 15 * ln * lr, LR[1], 17 * ln * lr, st.lw + 1, st.limb));
   }
   c.save(); c.translate(48, hy + bob); c.rotate(lean); c.translate(-48, -58);
   if (st.robe) {
@@ -1258,29 +1300,40 @@ function drawDemon(c, mode, f, st) {
     c.fillStyle = tg; c.strokeStyle = '#150404'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(29, 33); c.quadraticCurveTo(48, 25, 67, 33); c.lineTo(60, 58); c.quadraticCurveTo(48, 63, 36, 58); c.closePath(); c.fill(); c.stroke();
     c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(48, 31); c.lineTo(48, 56);
-    c.moveTo(35, 40); c.quadraticCurveTo(42, 45, 47, 40); c.moveTo(61, 40); c.quadraticCurveTo(54, 45, 49, 40);
-    c.moveTo(38, 48); c.lineTo(46, 48); c.moveTo(58, 48); c.lineTo(50, 48); c.stroke();
+    c.beginPath();
+    if (back) {   // spine and shoulder blades
+      c.moveTo(48, 30); c.lineTo(48, 58);
+      for (const y of [36, 42, 48, 54]) { c.moveTo(45, y); c.lineTo(51, y); }
+      c.moveTo(36, 38); c.quadraticCurveTo(40, 47, 44, 40); c.moveTo(60, 38); c.quadraticCurveTo(56, 47, 52, 40);
+    } else {
+      c.moveTo(48, 31); c.lineTo(48, 56);
+      c.moveTo(35, 40); c.quadraticCurveTo(42, 45, 47, 40); c.moveTo(61, 40); c.quadraticCurveTo(54, 45, 49, 40);
+      c.moveTo(38, 48); c.lineTo(46, 48); c.moveTo(58, 48); c.lineTo(50, 48);
+    }
+    c.stroke();
     if (st.belly) {
       c.fillStyle = tg; c.strokeStyle = '#150404'; c.lineWidth = 2;
       c.beginPath(); c.ellipse(48, 52, 12 + st.belly, 12 + st.belly * 0.7, 0, 0, 7); c.fill(); c.stroke();
-      c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(48, 55, 2, 0, 7); c.fill();
+      if (!back) { c.fillStyle = 'rgba(0,0,0,.45)'; c.beginPath(); c.arc(48, 55, 2, 0, 7); c.fill(); }
     }
     if (st.cloth) {
       c.fillStyle = st.cloth; c.fillRect(35, 55, 26, 6); c.fillStyle = '#c8a020'; c.fillRect(45, 55, 6, 6);
       c.beginPath(); c.moveTo(38, 61); c.lineTo(58, 61); c.lineTo(48, 76); c.closePath(); c.fill();
     }
   }
-  const sx = st.belly ? 29 : 33;
-  let h = limb(c, sx, 36, AL[0], 14 * ln, AL[1], 16 * ln, st.lw, st.arm); claws(c, h[0], h[1], h[2]);
-  h = limb(c, 96 - sx, 36, AR[0], 14 * ln, AR[1], 16 * ln, st.lw, st.arm); claws(c, h[0], h[1], h[2]);
-  if (st.weapon && mode !== 'die') heldWeapon(c, st.weapon, h[0], h[1], mode === 'attack' ? -0.3 + u * 2.4 : 0.3 + s * 0.2, st.wopt);
+  const sx = st.belly ? 29 : 33, aL = st.armL || 1, aR = st.armR || 1;
+  let h = limb(c, sx, 36, AL[0], 14 * ln * aL, AL[1], 16 * ln * aL, st.lw, st.arm); claws(c, h[0], h[1], h[2]);
+  h = limb(c, 96 - sx, 36, AR[0], 14 * ln * aR, AR[1], 16 * ln * aR, st.lwR || st.lw, st.arm); claws(c, h[0], h[1], h[2]);
+  if (st.weapon && !cower && mode !== 'die') heldWeapon(c, st.weapon, h[0], h[1], mode === 'attack' ? -0.3 + u * 2.4 : 0.3 + s * 0.2, st.wopt);
+  if (st.hump) {   // a lump on the shoulder / back
+    c.fillStyle = st.c1; c.strokeStyle = '#150404'; c.lineWidth = 2; c.beginPath(); c.ellipse(62, 29, st.hump * 0.8, st.hump * 0.7, 0.4, 0, 7); c.fill(); c.stroke();
+  }
   if (st.horn) {
     c.fillStyle = st.horn;
     for (const sd of [-1, 1]) { c.beginPath(); c.moveTo(48 + sd * 18, 34); c.lineTo(48 + sd * 24, 22); c.lineTo(48 + sd * 12, 30); c.fill(); }
   }
   c.fillStyle = st.limb; c.fillRect(43, 26, 10, 10);
-  head(c, 48, 30 + (st.hunch || 0), ht, jaw, st);
+  head(c, 48, 30 + (st.hunch || 0) + (cower ? 5 : 0), ht, jaw, st, back);
   c.restore();
   finish(c, DS);
 }
@@ -2069,13 +2122,24 @@ function makeExtras() {
   crateArt = crateTex(); chestArt = chestTex(false); chestOpenArt = chestTex(true);
 }
 
+const styleOf = (k, v) => Object.assign({}, STY[k], VARS[k][v][2] || {}, { weapon: VARS[k][v][0], wopt: VARS[k][v][1] });
+function extraSprites(k, v) {   // the view from behind and the cowering pose are only drawn the first time an enemy needs them
+  const S = SPR[k][v];
+  if (!S.flee) {
+    const st = styleOf(k, v), add = (arr, mode, f) => { const c = mk(); c.width = c.height = DS; drawDemon(c.getContext('2d'), mode, f, st); arr.push(c); };
+    S.flee = []; S.cower = [];
+    for (let f = 0; f < 8; f++) add(S.flee, 'flee', f);
+    for (let f = 0; f < 2; f++) add(S.cower, 'cower', f);
+  }
+  return S;
+}
 function ensureSprites(types) {
   for (const k of Object.keys(SPR)) if (!types.includes(k)) delete SPR[k];   // free the previous floor's sprites
   for (const k of types) {
     SPR[k] = SPR[k] || [];
-    for (let v = 0; v < 5; v++) {
+    for (let v = 0; v < VARS[k].length; v++) {
       if (SPR[k][v]) continue;
-      const S = SPR[k][v] = { walk: [], attack: [], die: [] }, st = Object.assign({}, STY[k], { weapon: VARS[k][v][0], wopt: VARS[k][v][1] });
+      const S = SPR[k][v] = { walk: [], attack: [], die: [] }, st = styleOf(k, v);
       const add = (arr, mode, f) => { const c = mk(); c.width = c.height = DS; drawDemon(c.getContext('2d'), mode, f, st); arr.push(c); };
       for (let f = 0; f < 8; f++) add(S.walk, 'walk', f);
       for (let f = 0; f < 4; f++) add(S.attack, 'attack', f);
@@ -3125,6 +3189,70 @@ function chase(e, dt, spd, dist) {
   if (!isWall(e.x, e.y + my)) e.y += my;
 }
 
+// Run along the distance field away from the player; false once cornered
+function fleeStep(e, dt, spd) {
+  const cx = e.x | 0, cy = e.y | 0;
+  let best = field[cy * N + cx], bx = cx, by = cy;
+  for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) {
+    if (!i && !j) continue;
+    const nx = cx + i, ny = cy + j;
+    if (nx < 0 || ny < 0 || nx >= N || ny >= N || blk[ny * N + nx]) continue;
+    if (i && j && (blk[cy * N + nx] || blk[ny * N + cx])) continue;
+    const v = field[ny * N + nx];
+    if (v > best && v < 9999) { best = v; bx = nx; by = ny; }
+  }
+  const tx = bx + 0.5, ty = by + 0.5, dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
+  if (bx === cx && by === cy && d < 0.12) return false;   // in the best cell already: a corner
+  const mx = dx / (d || 1) * spd * dt, my = dy / (d || 1) * spd * dt;
+  if (!isWall(e.x + mx, e.y)) e.x += mx;
+  if (!isWall(e.x, e.y + my)) e.y += my;
+  return true;
+}
+function steer(e, tx, ty, spd, dt) {   // straight towards a point, sliding along walls; returns the distance actually covered
+  const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy) || 1, mx = dx / d * spd * dt, my = dy / d * spd * dt, ox = e.x, oy = e.y;
+  if (!isWall(e.x + mx, e.y)) e.x += mx;
+  if (!isWall(e.x, e.y + my)) e.y += my;
+  return Math.hypot(e.x - ox, e.y - oy);
+}
+// Behaviour variants. Cowards run away, back turned, and end up crouching in a corner begging. Feinters pretend to run, circle round the player and strike from behind.
+function behave(e, dt, dist) {
+  const spd = TYPES[e.type].spd, aware = (dist < 8 && los(e.x, e.y, player.x, player.y)) || e.hp < e.mhp;
+  const run = (k) => { e.animTimer += dt * k; if (e.animTimer > 0.15) { e.frame = (e.frame + 1) % 8; e.animTimer = 0; } e.state = 'walk'; };
+  if (e.bh === 'coward') {
+    if (e.bs === 'idle') { if (!aware) return false; e.bs = 'flee'; e.act = true; e.bt = 0; enemyVoice(e, 'hurt'); }
+    if (e.bs === 'flee') {
+      e.back = true; run(1.4);
+      if (fleeStep(e, dt, spd * 1.15)) e.bt = 0;
+      else if ((e.bt += dt) > 0.25) { e.bs = 'cower'; e.back = false; e.frame = 0; e.animTimer = 0; }
+      return true;
+    }
+    if (e.bs === 'cower') { e.state = 'cower'; e.animTimer += dt; if (e.animTimer > 0.35) { e.frame = (e.frame + 1) % 2; e.animTimer = 0; } return true; }
+  } else if (e.bh === 'feint') {
+    if (e.bs === 'idle') { if (!(aware && dist < 9)) return false; e.bs = 'fake'; e.act = true; e.bt = 1.5 + Math.random() * 1.2; enemyVoice(e, 'hurt'); }
+    if (e.bs === 'fake') {
+      e.back = true; run(1.2); fleeStep(e, dt, spd);
+      if ((e.bt -= dt) <= 0) { e.bs = 'flank'; e.bt = 7; e.fp = 0; e.stuck = 0; }
+      return true;
+    }
+    if (e.bs === 'flank') {   // first to one side of the player, then to the spot right behind them
+      const px = -player.dirY, py = player.dirX, side = ((e.x - player.x) * px + (e.y - player.y) * py) >= 0 ? 1 : -1;
+      let tx, ty;
+      if (e.fp === 0) {
+        tx = player.x + px * side * 2.6; ty = player.y + py * side * 2.6;
+        if (isWall(tx, ty)) { tx = player.x - player.dirX * 2.2; ty = player.y - player.dirY * 2.2; }
+        if (Math.hypot(tx - e.x, ty - e.y) < 1.0) e.fp = 1;
+      } else { tx = player.x - player.dirX * 1.0; ty = player.y - player.dirY * 1.0; }
+      const ox = e.x, oy = e.y, mv = steer(e, tx, ty, spd * 1.1, dt);
+      run(1);
+      e.back = ((e.x - ox) * (player.x - e.x) + (e.y - oy) * (player.y - e.y)) < 0;   // walking away from the player: show the back
+      e.stuck = mv < spd * dt * 0.3 ? e.stuck + dt : 0;
+      if ((e.bt -= dt) <= 0 || e.stuck > 0.8 || dist < 1.2) { e.bs = 'normal'; e.act = false; e.back = false; }
+      return true;
+    }
+  }
+  return false;
+}
+
 // Enemies that have not noticed you yet: a slow stroll around the place they spawned, with now and then a longer stop in front of an object (a prop or an item on the floor)
 function wander(e, dt) {
   const w = e.wn || (e.wn = { mode: 'pause', t: Math.random() * 2.5, hx: e.x, hy: e.y, tx: e.x, ty: e.y, look: false, stuck: 0 });
@@ -3342,6 +3470,7 @@ function update(dt) {
   // Enemies
   for (const e of enemies) {
     if (!e.alive) { e.deathTimer += dt; continue; }
+    e.back = false;
     e.vC -= dt;
     const vd = Math.hypot(e.x - player.x, e.y - player.y), vr = 7 * (e.type === 'boss' ? 1.6 : 1);
     if (vd < vr) {
@@ -3350,7 +3479,8 @@ function update(dt) {
       if (e.vT <= 0) { const w = e.hp < e.mhp; e.vT = (w ? 1.6 : 2.8) + Math.random() * 2; enemyVoice(e, w ? 'hurt' : 'idle'); }
     } else e.near = false;
     const T = TYPES[e.type], dx = player.x - e.x, dy = player.y - e.y, dist = Math.hypot(dx, dy);
-    if (e.type !== 'boss' && e.hp >= e.mhp && field[(e.y | 0) * N + (e.x | 0)] >= 18) { wander(e, dt); continue; }
+    if (e.type !== 'boss' && e.hp >= e.mhp && !e.act && field[(e.y | 0) * N + (e.x | 0)] >= 18) { wander(e, dt); continue; }
+    if (e.bh !== 'normal' && e.bs !== 'normal' && behave(e, dt, dist)) continue;
     e.animTimer += dt;
     if (e.animTimer > 0.15) { e.frame = (e.frame + 1) % 8; e.animTimer = 0; }
     if (e.type === 'boss') {
@@ -3529,11 +3659,13 @@ function renderSprites() {
     const T = TYPES[e.type], S = SPR[e.type][e.v | 0];
     let cv;
     if (!e.alive) cv = S.die[Math.min(4, Math.floor(e.deathTimer / 0.14))];
+    else if (e.state === 'cower') cv = extraSprites(e.type, e.v | 0).cower[e.frame % 2];
     else if (e.state === 'attack' || e.state === 'summon') cv = S.attack[e.frame % 4];
+    else if (e.back) cv = extraSprites(e.type, e.v | 0).flee[e.frame % 8];
     else cv = S.walk[e.frame % 8];
     let ox = 0;
     if (e.alive && e.type === 'boss') ox = e.state === 'summon' ? (Math.random() - 0.5) * 0.1 : Math.sin(tNow * 3) * 0.07;
-    list.push({ x: e.x, y: e.y, canvas: cv, scale: T.sc, floor: 0.06, lift: T.lift ? T.lift + Math.sin(tNow * 3 + e.x) * 0.04 : 0, ox, hp: e.alive && e.hp < e.mhp ? Math.max(0, e.hp / e.mhp) : undefined, ht: e.type });
+    list.push({ x: e.x, y: e.y, canvas: cv, scale: T.sc * (e.hs || 1), floor: 0.06, lift: T.lift ? T.lift + Math.sin(tNow * 3 + e.x) * 0.04 : 0, ox, hp: e.alive && e.hp < e.mhp ? Math.max(0, e.hp / e.mhp) : undefined, ht: e.type });
   }
   if (stairs) {
     const by = stairs.y - 0.5;   // the alcove spans by .. by + 1
